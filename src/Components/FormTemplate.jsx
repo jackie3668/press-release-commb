@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
+import './FormTemplate.css';
 
 const FormTemplate = () => {
-  // State for managing edit mode
-  const [editMode, setEditMode] = useState(false);
-
   // State for managing form data
-  const [companyName, setCompanyName] = useState('Company Name');
-  const [companyDescription, setCompanyDescription] = useState('Company Description');
-  const [companyOfferings, setCompanyOfferings] = useState('Company Offerings');
-  const [personName, setPersonName] = useState('Person Name');
-  const [quote, setQuote] = useState('Quote');
-  const [boilerplate, setBoilerplate] = useState('Boilerplate');
+  const [formData, setFormData] = useState({
+    companyName: 'Insert Company Name',
+    companyDescription: 'Insert Company Description',
+    companyOfferings: 'Insert Company Offerings',
+    personName: 'Insert Person Name',
+    quote: 'Insert Quote',
+    boilerplate: 'Insert Boilerplate',
+  });
 
-  // Function to handle toggling edit mode
-  const toggleEditMode = () => {
-    setEditMode(!editMode);
+  // State to track which field is being edited
+  const [editField, setEditField] = useState(null);
+
+  // Function to handle input changes
+  const handleInputChange = (key, value) => {
+    setFormData({
+      ...formData,
+      [key]: value
+    });
   };
 
   // Function to handle document generation
@@ -32,23 +38,23 @@ const FormTemplate = () => {
                 children: [
                   new TextRun(`NEW MEMBER PRESS RELEASE\n\n`),
                   new TextRun(
-                    `The Canadian Out-of-Home Marketing and Measurement Bureau (COMMB) has added to their roster of association members, which now includes ${companyName}.\n\n`
+                    `The Canadian Out-of-Home Marketing and Measurement Bureau (COMMB) has added to their roster of association members, which now includes ${formData.companyName}.\n\n`
                   ),
                   new TextRun(
-                    `${companyName} is a ${companyDescription}. Their network includes ${companyOfferings}.\n\n`
+                    `${formData.companyName} is a ${formData.companyDescription}. Their network includes ${formData.companyOfferings}.\n\n`
                   ),
                   new TextRun(
-                    `${personName}, shares their excitement about joining COMMB. ${personName} states, "${quote}"\n\n`
+                    `${formData.personName}, shares their excitement about joining COMMB. ${formData.personName} states, "${formData.quote}"\n\n`
                   ),
                   new TextRun(
-                    `COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome ${companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.\n\n`
+                    `COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome ${formData.companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.\n\n`
                   ),
                   new TextRun(`About COMMB\n\n`),
                   new TextRun(
                     `COMMB is the national not-for-profit organization for the Canadian out-of-home (OOH) industry. Our membership base is comprised of advertisers, agencies, programmatic tech stacks, and OOH companies, large and small. COMMB is responsible for the collective marketing and measurement efforts for the OOH industry, developing proprietary audience measurement methodologies for a variety of OOH media formats, and ensuring the voice of OOH is at the forefront of media via broad marketing and communications initiatives.\n\n`
                   ),
-                  new TextRun(`About ${companyName}\n\n`),
-                  new TextRun(`${boilerplate}\n\n`),
+                  new TextRun(`About ${formData.companyName}\n\n`),
+                  new TextRun(`${formData.boilerplate}\n\n`),
                   new TextRun(
                     `For more information, please contact:\nJennifer Copeland\nDirector, Brand Communications\njcopeland@commb.ca`
                   ),
@@ -69,26 +75,118 @@ const FormTemplate = () => {
     }
   };
 
+  const handleFieldClick = (field) => {
+    setEditField(field);
+  };
 
-
-
-  // JSX for rendering form fields and save button
   return (
     <div>
-      {/* Toggle edit mode button */}
-      <button onClick={toggleEditMode}>{editMode ? 'View Mode' : 'Edit Mode'}</button>
-
-      {/* Render editable fields or static text based on edit mode */}
-      <div>
-        <p><strong>Company Name:</strong> {editMode ? <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} /> : companyName}</p>
-        <p><strong>Company Description:</strong> {editMode ? <input type="text" value={companyDescription} onChange={(e) => setCompanyDescription(e.target.value)} /> : companyDescription}</p>
-        <p><strong>Company Offerings:</strong> {editMode ? <input type="text" value={companyOfferings} onChange={(e) => setCompanyOfferings(e.target.value)} /> : companyOfferings}</p>
-        <p><strong>Person Name:</strong> {editMode ? <input type="text" value={personName} onChange={(e) => setPersonName(e.target.value)} /> : personName}</p>
-        <p><strong>Quote:</strong> {editMode ? <input type="text" value={quote} onChange={(e) => setQuote(e.target.value)} /> : quote}</p>
-        <p><strong>Boilerplate:</strong> {editMode ? <input type="text" value={boilerplate} onChange={(e) => setBoilerplate(e.target.value)} /> : boilerplate}</p>
-      </div>
-
-      {/* Save button */}
+      <h1>NEW MEMBER PRESS RELEASE</h1>
+      <p>
+        The Canadian Out-of-Home Marketing and Measurement Bureau (COMMB) has added to their roster of association members, which now includes{' '}
+        <span className='clickable' onClick={() => handleFieldClick('companyName')}>
+          {editField === 'companyName' ? (
+            <input
+              type="text"
+              value={formData.companyName}
+              onChange={(e) => handleInputChange('companyName', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.companyName
+          )}
+        </span>.
+      </p>
+      <p>
+        {formData.companyName} is a{' '}
+        <span className='clickable' onClick={() => handleFieldClick('companyDescription')}>
+          {editField === 'companyDescription' ? (
+            <input
+              type="text"
+              value={formData.companyDescription}
+              onChange={(e) => handleInputChange('companyDescription', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.companyDescription
+          )}
+        </span>. Their network includes{' '}
+        <span className='clickable' onClick={() => handleFieldClick('companyOfferings')}>
+          {editField === 'companyOfferings' ? (
+            <input
+              type="text"
+              value={formData.companyOfferings}
+              onChange={(e) => handleInputChange('companyOfferings', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.companyOfferings
+          )}
+        </span>.
+      </p>
+      <p>
+        <span className='clickable' onClick={() => handleFieldClick('personName')}>
+          {editField === 'personName' ? (
+            <input
+              type="text"
+              value={formData.personName}
+              onChange={(e) => handleInputChange('personName', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.personName
+          )}
+        </span>, shares their excitement about joining COMMB.{' '}
+        <span className='clickable' onClick={() => handleFieldClick('quote')}>
+          {editField === 'quote' ? (
+            <input
+              type="text"
+              value={formData.quote}
+              onChange={(e) => handleInputChange('quote', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.quote
+          )}
+        </span>
+      </p>
+      <p>
+        COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome{' '}
+        {formData.companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.
+      </p>
+      <p>
+        <strong>About </strong>
+        {formData.companyName}
+        <br />
+        <span className='clickable' onClick={() => handleFieldClick('boilerplate')}>
+          {editField === 'boilerplate' ? (
+            <input
+              type="text"
+              value={formData.boilerplate}
+              onChange={(e) => handleInputChange('boilerplate', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.boilerplate
+          )}
+        </span>
+      </p>
+      <p>
+        For more information, please contact:
+        <br />
+        Jennifer Copeland
+        <br />
+        Director, Brand Communications
+        <br />
+        jcopeland@commb.ca
+      </p>
+      {/* Save button (for demonstration, adjust functionality as needed) */}
       <button onClick={handleSave}>Save as Word Doc</button>
     </div>
   );

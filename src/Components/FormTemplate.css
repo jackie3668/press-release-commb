@@ -1,0 +1,10 @@
+.clickable {
+  color: red;
+  text-decoration: underline;
+  font-style: bold;
+  cursor: pointer;
+}
+
+.edited {
+  color: black;
+}
