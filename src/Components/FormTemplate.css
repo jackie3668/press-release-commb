@@ -1,5 +1,5 @@
 .clickable {
-  color: red;
+  color: blue;
   text-decoration: underline;
   font-style: bold;
   cursor: pointer;
@@ -7,4 +7,12 @@
 
 .edited {
   color: black;
+}
+
+.logos {
+  width: 100vw;
+}
+
+.logos img {
+  width: 10vw;
 }

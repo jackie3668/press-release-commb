@@ -1,86 +1,135 @@
 import React, { useState } from 'react';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { saveAs } from 'file-saver';
-import './FormTemplate.css';
+import { db, storage } from '../firebase'; // Import Firebase db and storage
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import './FormTemplate.css'; // CSS for styling (if any)
+import logo from './image1.png'; // Placeholder logo image
 
 const FormTemplate = () => {
-  // State for managing form data
   const [formData, setFormData] = useState({
     companyName: 'Insert Company Name',
     companyDescription: 'Insert Company Description',
     companyOfferings: 'Insert Company Offerings',
     personName: 'Insert Person Name',
+    personTitle: 'Insert Person Title',
     quote: 'Insert Quote',
     boilerplate: 'Insert Boilerplate',
+    companyLogoURL: null, 
+    // Added companyLogoURL state to store the download URL
   });
-
-  // State to track which field is being edited
+  const [imageURL, setImageURL] = useState(null);
   const [editField, setEditField] = useState(null);
 
-  // Function to handle input changes
   const handleInputChange = (key, value) => {
     setFormData({
       ...formData,
-      [key]: value
+      [key]: value,
     });
-  };
-
-  // Function to handle document generation
-  const handleSave = async () => {
-    try {
-      // Create a new Document instance
-      const doc = new Document({
-        sections: [
-          {
-            properties: {},
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun(`NEW MEMBER PRESS RELEASE\n\n`),
-                  new TextRun(
-                    `The Canadian Out-of-Home Marketing and Measurement Bureau (COMMB) has added to their roster of association members, which now includes ${formData.companyName}.\n\n`
-                  ),
-                  new TextRun(
-                    `${formData.companyName} is a ${formData.companyDescription}. Their network includes ${formData.companyOfferings}.\n\n`
-                  ),
-                  new TextRun(
-                    `${formData.personName}, shares their excitement about joining COMMB. ${formData.personName} states, "${formData.quote}"\n\n`
-                  ),
-                  new TextRun(
-                    `COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome ${formData.companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.\n\n`
-                  ),
-                  new TextRun(`About COMMB\n\n`),
-                  new TextRun(
-                    `COMMB is the national not-for-profit organization for the Canadian out-of-home (OOH) industry. Our membership base is comprised of advertisers, agencies, programmatic tech stacks, and OOH companies, large and small. COMMB is responsible for the collective marketing and measurement efforts for the OOH industry, developing proprietary audience measurement methodologies for a variety of OOH media formats, and ensuring the voice of OOH is at the forefront of media via broad marketing and communications initiatives.\n\n`
-                  ),
-                  new TextRun(`About ${formData.companyName}\n\n`),
-                  new TextRun(`${formData.boilerplate}\n\n`),
-                  new TextRun(
-                    `For more information, please contact:\nJennifer Copeland\nDirector, Brand Communications\njcopeland@commb.ca`
-                  ),
-                ],
-              }),
-            ],
-          },
-        ],
-      });
-
-      // Pack the document into a blob
-      const blob = await Packer.toBlob(doc);
-
-      // Save the document using file-saver
-      saveAs(blob, 'press_release.docx');
-    } catch (error) {
-      console.error('Error generating document: ', error);
-    }
   };
 
   const handleFieldClick = (field) => {
     setEditField(field);
   };
 
+  const handleSave = async () => {
+    try {
+      console.log('Starting handleSave...');
+      
+      // Ensure formData is correctly populated
+      console.log('formData:', formData);
+  
+      const timestamp = serverTimestamp(); // Firestore server timestamp
+      console.log('Timestamp:', timestamp);
+  
+      // Upload companyLogoPNG to Firebase Storage if it's a new upload
+        console.log('Uploading image...');
+  
+        // Create a reference to the file in Firebase Storage
+        const storageRef = ref(getStorage(), 'images/' + formData.companyName);
+  
+        // Upload file to Firebase Storage
+        const snapshot = await uploadBytes(storageRef, formData.companyLogoPNG);
+        console.log('File uploaded successfully:', snapshot);
+  
+        // Get download URL
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        console.log('Download URL:', downloadURL);
+  
+        // Update companyLogoURL in formData and state
+        console.log('Before updating formData:', formData.companyLogoURL);
+        setFormData({
+          ...formData,
+          companyLogoURL: downloadURL, // Ensure downloadURL is correctly obtained
+        });
+        
+        await setDoc(doc(db, 'press-release', formData.companyName), {
+          companyName: formData.companyName,
+          companyDescription: formData.companyDescription,
+          companyOfferings: formData.companyOfferings,
+          personName: formData.personName,
+          personTitle: formData.personTitle,
+          quote: formData.quote,
+          boilerplate: formData.boilerplate,
+          companyLogoURL: downloadURL,
+          timestamp: timestamp,
+        });
+    
+        console.log('After updating formData:', formData.companyLogoURL);
+        // Log updated formData
+        console.log('Updated formData:', formData.companyLogoURL);
+  
+        // Alert user
+        alert('Image uploaded successfully!');
+
+
+      console.log('Form data saved successfully to Firestore!');
+  
+      // Alert user
+      alert('Form submitted!');
+    } catch (error) {
+      console.error('Error saving form data: ', error);
+    }
+  };
+  
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file.type === 'image/png') {
+      // Set companyLogoPNG in formData
+      setFormData({
+        ...formData,
+        companyLogoPNG: file,
+      });
+
+      // Optionally store the file object if needed
+
+      // Get download URL for the uploaded file
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        setImageURL(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert('Please select a PNG file.');
+    }
+  };
+
   return (
     <div>
+      <div className="logos">
+        <img src={logo} alt="" />
+        <label>
+          Upload Image:
+          <input type="file" accept="image/*" onChange={handleImageUpload} />
+          {imageURL && (
+            <img
+              src={imageURL}
+              alt="Uploaded Image"
+              style={{ maxWidth: '100%', marginTop: '10px' }}
+            />
+          )}
+        </label>
+      </div>
       <h1>NEW MEMBER PRESS RELEASE</h1>
       <p>
         The Canadian Out-of-Home Marketing and Measurement Bureau (COMMB) has added to their roster of association members, which now includes{' '}
@@ -140,7 +189,20 @@ const FormTemplate = () => {
           ) : (
             formData.personName
           )}
-        </span>, shares their excitement about joining COMMB.{' '}
+        </span>, {' '}
+        <span className='clickable' onClick={() => handleFieldClick('personTitle')}>
+          {editField === 'personTitle' ? (
+            <input
+              type="text"
+              value={formData.personTitle}
+              onChange={(e) => handleInputChange('personTitle', e.target.value)}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (
+            formData.personTitle
+          )}
+        </span>, shares their excitement about joining COMMB.{' '}{formData.personName}{' '}states,{' "'}
         <span className='clickable' onClick={() => handleFieldClick('quote')}>
           {editField === 'quote' ? (
             <input
@@ -154,6 +216,7 @@ const FormTemplate = () => {
             formData.quote
           )}
         </span>
+        {'".'}
       </p>
       <p>
         COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome{' '}
@@ -187,7 +250,7 @@ const FormTemplate = () => {
         jcopeland@commb.ca
       </p>
       {/* Save button (for demonstration, adjust functionality as needed) */}
-      <button onClick={handleSave}>Save as Word Doc</button>
+      <button onClick={handleSave}>Save</button>
     </div>
   );
 };
