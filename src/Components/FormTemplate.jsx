@@ -258,8 +258,7 @@ const FormTemplate = () => {
         COMMB is the national not-for-profit organization for the Canadian out-of-home (OOH) industry. Our membership base is comprised of advertisers, agencies, programmatic tech stacks, and OOH companies, large and small. COMMB is responsible for the collective marketing and measurement efforts for the OOH industry, developing proprietary audience measurement methodologies for a variety of OOH media formats, and ensuring the voice of OOH is at the forefront of media via broad marketing and communications initiatives.
       </p>
       <p>
-        <strong>About </strong>
-        {formDataPlaceholder.companyName}
+        <strong>About {formDataPlaceholder.companyName}</strong>
         <br />
         <span id='boilerplate' className="clickable" onClick={() => handleFieldClick('boilerplate')}>
           {editField === 'boilerplate' ? (
