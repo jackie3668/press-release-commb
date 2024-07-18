@@ -175,6 +175,7 @@ const Forms = () => {
                     text: `${formData.companyName}`,
                     font: 'Arial',
                     size: 22,
+                    bold: true,
                   }),
                 ],
                 spacing: {
