@@ -36,6 +36,10 @@
   flex-direction: column;
 }
 
+input {
+  width: 10vw;
+}
+
 textarea {
   width: 50vw;
 }
@@ -45,7 +49,6 @@ textarea {
 }
 
 textarea, input[type="text"] {
-  width: 100%;
   padding: 5px;
   margin: 5px 0;
   box-sizing: border-box;

@@ -6,17 +6,30 @@ import logo from './image1.png'; // Placeholder logo image
 
 const FormTemplate = () => {
   const [formData, setFormData] = useState({
+    companyName: '',
+    companyDescription: '',
+    companyOfferings: '',
+    personFullName: '',
+    personTitle: '',
+    personName: '',
+    quote: '',
+    boilerplate: '',
+    companyLogoPNG: null, // Added companyLogoPNG state
+    companyLogoURL: null,
+    logoWidth: null,
+    logoHeight: null,
+  });
+  const [formDataPlaceholder, setFormDataPlaceholder] = useState({
     companyName: 'Insert Company Name',
     companyDescription: 'Insert Company Description',
     companyOfferings: 'Insert Company Offerings',
-    personName: 'Insert Person Name',
+    personFullName: 'Insert Person Full Name',
     personTitle: 'Insert Person Title',
+    personName: 'Insert Person Name',
     quote: 'Insert Quote',
     boilerplate: 'Insert Boilerplate',
-    companyLogoURL: null,
-    logoWidth: null, // Added logoWidth state
-    logoHeight: null, // Added logoHeight state
   });
+
   const [imageURL, setImageURL] = useState(null);
   const [editField, setEditField] = useState(null);
   const [widthTemp, setWidthTemp] = useState(null);
@@ -27,7 +40,11 @@ const FormTemplate = () => {
       ...formData,
       [key]: value,
     });
-    document.getElementById(key).classList.add('edited')
+    setFormDataPlaceholder({
+      ...formDataPlaceholder,
+      [key]: value,
+    });
+    document.getElementById(key).classList.add('edited');
   };
 
   const handleFieldClick = (field) => {
@@ -36,32 +53,20 @@ const FormTemplate = () => {
 
   const handleSave = async () => {
     try {
-      console.log('Starting handleSave...');
-
-      // Ensure formData is correctly populated
-      console.log('formData:', formData);
-
-      const timestamp = serverTimestamp(); // Firestore server timestamp
-      console.log('Timestamp:', timestamp);
-
-      const storageBucket = 'press-release-24'; // Replace with your Firebase Storage bucket name
-      const companyName = formData.companyName; // Assuming formData contains companyName
-      const path = 'gs://' + storageBucket + '/images/' + companyName; // Full path including bucket and filename
+      const timestamp = serverTimestamp();
+      const storageBucket = 'press-release-24';
+      const companyName = formData.companyName;
+      const path = 'gs://' + storageBucket + '/images/' + companyName;
 
       const storageRef = ref(storage, path);
-      // Upload file to Firebase Storage
       const snapshot = await uploadBytes(storageRef, formData.companyLogoPNG);
-      console.log('File uploaded successfully:', snapshot);
-
-      // Get download URL
       const downloadURL = await getDownloadURL(snapshot.ref);
-      console.log('Download URL:', downloadURL);
 
-      // Update companyLogoURL in formData and state
-      console.log('Before updating formData:', formData.companyLogoURL);
       setFormData({
         ...formData,
-        companyLogoURL: downloadURL, // Ensure downloadURL is correctly obtained
+        companyLogoURL: downloadURL,
+        logoWidth: widthTemp,
+        logoHeight: heightTemp,
       });
 
       await setDoc(doc(db, 'press-release', formData.companyName), {
@@ -72,9 +77,9 @@ const FormTemplate = () => {
         personTitle: formData.personTitle,
         quote: formData.quote,
         boilerplate: formData.boilerplate,
-        companyLogoURL: imageURL,
-        logoWidth: widthTemp, 
-        logoHeight: heightTemp, 
+        companyLogoURL: downloadURL,
+        logoWidth: widthTemp,
+        logoHeight: heightTemp,
         timestamp: timestamp,
       });
 
@@ -92,12 +97,11 @@ const FormTemplate = () => {
       reader.onload = function (e) {
         const img = new Image();
         img.onload = function () {
-          const maxWidth = 400; // Maximum width allowed
+          const maxWidth = 400;
           const aspectRatio = img.naturalWidth / img.naturalHeight;
           const width = Math.min(img.naturalWidth, maxWidth);
-
           const height = width / aspectRatio;
-          // Create a canvas element to resize the image
+
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
@@ -107,15 +111,17 @@ const FormTemplate = () => {
           setWidthTemp(width);
           setHeightTemp(height);
 
-          // Convert canvas back to blob
           canvas.toBlob((blob) => {
             const resizedFile = new File([blob], file.name, {
               type: 'image/png',
               lastModified: Date.now(),
             });
 
-            // Optionally store the file object if needed
             setImageURL(canvas.toDataURL('image/png'));
+            setFormData({
+              ...formData,
+              companyLogoPNG: resizedFile,
+            });
           }, 'image/png');
         };
         img.src = e.target.result;
@@ -126,17 +132,24 @@ const FormTemplate = () => {
     }
   };
 
+  const handleEnterKey = (e, key) => {
+    if (e.key === 'Enter') {
+      handleInputChange(key, e.target.value);
+      setEditField(null);
+    }
+  };
+
   return (
     <div className='container'>
       <div className="logos">
         <img src={logo} alt="" />
         {imageURL && (
-            <img
-              src={imageURL}
-              alt="Uploaded Image"
-              style={{ maxWidth: '100%', marginTop: '10px' }}
-            />
-          )}
+          <img
+            src={imageURL}
+            alt="Uploaded Image"
+            style={{ maxWidth: '100%', marginTop: '10px' }}
+          />
+        )}
         <label>
           Upload PNG Logo:
           <input type="file" accept="image/*" onChange={handleImageUpload} />
@@ -151,86 +164,93 @@ const FormTemplate = () => {
               type="text"
               value={formData.companyName}
               onChange={(e) => handleInputChange('companyName', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'companyName')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.companyName
-          )}
+          ) : (formDataPlaceholder.companyName)}
         </span>.
       </p>
       <p>
-        {formData.companyName} is a{' '}
+        {formDataPlaceholder.companyName} is a{' '}
         <span id='companyDescription' className="clickable" onClick={() => handleFieldClick('companyDescription')}>
           {editField === 'companyDescription' ? (
             <textarea
               value={formData.companyDescription}
               rows={1}
               onChange={(e) => handleInputChange('companyDescription', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'companyDescription')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.companyDescription
-          )}
+          ) : (formDataPlaceholder.companyDescription)}
         </span>. Their network includes{' '}
         <span id='companyOfferings' className="clickable" onClick={() => handleFieldClick('companyOfferings')}>
           {editField === 'companyOfferings' ? (
             <textarea
               value={formData.companyOfferings}
               onChange={(e) => handleInputChange('companyOfferings', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'companyOfferings')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.companyOfferings
-          )}
+          ) : (formDataPlaceholder.companyOfferings)}
         </span>.
       </p>
       <p>
-        <span id='personName' className="clickable" onClick={() => handleFieldClick('personName')}>
-          {editField === 'personName' ? (
+        <span id='personFullName' className="clickable" onClick={() => handleFieldClick('personFullName')}>
+          {editField === 'personFullName' ? (
             <input
               type="text"
-              value={formData.personName}
-              onChange={(e) => handleInputChange('personName', e.target.value)}
+              value={formData.personFullName}
+              onChange={(e) => handleInputChange('personFullName', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'personFullName')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.personName
-          )}
-        </span>,{' '}
+          ) : (formDataPlaceholder.personFullName)}
+        </span>
+        ,{' '}
         <span id='personTitle' className="clickable" onClick={() => handleFieldClick('personTitle')}>
           {editField === 'personTitle' ? (
             <input
               type="text"
               value={formData.personTitle}
               onChange={(e) => handleInputChange('personTitle', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'personTitle')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.personTitle
-          )}
-        </span>, shares their excitement about joining COMMB. {formData.personName} states, "{''}
+          ) : (formDataPlaceholder.personTitle)}
+        </span>, shares their excitement about joining COMMB.{' '}
+        <span id='personName' className="clickable" onClick={() => handleFieldClick('personName')}>
+          {editField === 'personName' ? (
+            <input
+              type="text"
+              value={formData.personName}
+              onChange={(e) => handleInputChange('personName', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'personName')}
+              onBlur={() => setEditField(null)}
+              autoFocus
+            />
+          ) : (formDataPlaceholder.personName)}
+        </span> states, "{''}
         <span id='quote' className="clickable" onClick={() => handleFieldClick('quote')}>
           {editField === 'quote' ? (
             <textarea
               value={formData.quote}
               rows={1}
               onChange={(e) => handleInputChange('quote', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'quote')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.quote
-          )}
+          ) : (formDataPlaceholder.quote)}
         </span>
         ".
       </p>
       <p>
-        COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome {formData.companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.
+        COMMB, committed to providing measurement and marketing solutions for the Canadian OOH industry, is excited to welcome {formDataPlaceholder.companyName} to its membership. They look forward to collaborating closely with their team across various facets of the OOH landscape.
       </p>
       <p>
         <strong>About COMMB</strong>
@@ -239,7 +259,7 @@ const FormTemplate = () => {
       </p>
       <p>
         <strong>About </strong>
-        {formData.companyName}
+        {formDataPlaceholder.companyName}
         <br />
         <span id='boilerplate' className="clickable" onClick={() => handleFieldClick('boilerplate')}>
           {editField === 'boilerplate' ? (
@@ -247,12 +267,11 @@ const FormTemplate = () => {
               value={formData.boilerplate}
               rows={1}
               onChange={(e) => handleInputChange('boilerplate', e.target.value)}
+              onKeyDown={(e) => handleEnterKey(e, 'boilerplate')}
               onBlur={() => setEditField(null)}
               autoFocus
             />
-          ) : (
-            formData.boilerplate
-          )}
+          ) : (formDataPlaceholder.boilerplate)}
         </span>
       </p>
       <p>
