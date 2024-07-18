@@ -41,12 +41,11 @@ const FormTemplate = () => {
       const timestamp = serverTimestamp(); // Firestore server timestamp
       console.log('Timestamp:', timestamp);
   
-      // Upload companyLogoPNG to Firebase Storage if it's a new upload
-        console.log('Uploading image...');
-  
-        // Create a reference to the file in Firebase Storage
-        const storageRef = ref(getStorage(), 'images/' + formData.companyName);
-  
+        const storageBucket = 'press-release-24'; // Replace with your Firebase Storage bucket name
+        const companyName = formData.companyName; // Assuming formData contains companyName
+        const path = 'gs://' + storageBucket + '/images/' + companyName; // Full path including bucket and filename
+      
+      const storageRef = ref(storage, path);
         // Upload file to Firebase Storage
         const snapshot = await uploadBytes(storageRef, formData.companyLogoPNG);
         console.log('File uploaded successfully:', snapshot);

@@ -3,9 +3,12 @@ import { db } from '../firebase'; // Import your Firestore instance
 import { collection, getDocs } from 'firebase/firestore'; // Import Firestore methods
 import { Document, Packer, Paragraph, TextRun, AlignmentType, ExternalHyperlink, ImageRun} from 'docx';
 import { saveAs } from 'file-saver';
+import { getDownloadURL, ref } from "firebase/storage";
+import logo from './image1.png'
 
 const Forms = () => {
   const [forms, setForms] = useState([]);
+  const [fileData, setFileData] = useState(null);
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -26,9 +29,30 @@ const Forms = () => {
     fetchForms();
   }, []);
 
+
+
   const handleExport = async (formData) => {
     try {
-      // Create a new Document instance
+      // Fetch logo and convert to array buffer
+      const response = await fetch(logo); // Replace 'logo' with your actual logo URL or path
+      const blob1 = await response.blob();
+      const arrayBuffer1 = await blob1.arrayBuffer();
+  
+      // Fetch company logo and convert to array buffer
+      const imageUrl = formData.companyLogoURL;
+      const fetchOptions = {
+        method: 'GET',
+        headers: {},
+        mode: 'cors',
+        credentials: 'same-origin',
+      };
+  
+      // Fetch company logo image and convert to array buffer
+      const response2 = await fetch(imageUrl, fetchOptions);
+      const blob2 = await response2.blob();
+      const arrayBuffer2 = await blob2.arrayBuffer();
+  
+      // Construct document with images and text
       const doc = new Document({
         sections: [
           {
@@ -37,15 +61,42 @@ const Forms = () => {
               new Paragraph({
                 alignment: 'left',
                 children: [
+                  // First image with arrayBuffer1
+                  new ImageRun({
+                    type: 'png',
+                    data: arrayBuffer1,
+                    transformation: {
+                      width: 100,
+                      height: 100,
+                    },
+                  }),
+                  // Second image with arrayBuffer2
+                  new ImageRun({
+                    type: 'png',
+                    data: arrayBuffer2,
+                    transformation: {
+                      width: 100,
+                      height: 100,
+                    },
+                  }),
+                ],
+                spacing: {
+                  after: 200,
+                },
+              }),
+              // Other paragraphs and text runs
+              new Paragraph({
+                alignment: 'left',
+                children: [
                   new TextRun({
                     text: "NEW MEMBER PRESS RELEASE",
                     bold: true,
                     font: "Arial",
-                    size: 26, // Size 13 in half-points
+                    size: 26,
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -58,7 +109,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -71,7 +122,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -84,7 +135,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -97,7 +148,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -111,7 +162,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -124,7 +175,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -143,7 +194,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -156,7 +207,7 @@ const Forms = () => {
                   }),
                 ],
                 spacing: {
-                  after: 200, // Adding spacing after the paragraph
+                  after: 200,
                 },
               }),
               new Paragraph({
@@ -199,68 +250,40 @@ const Forms = () => {
                   }),
                 ],
               }),
-              // Render the image if companyLogoURL exists
-              formData.companyLogoURL && new Paragraph({
-                alignment: 'left',
-                children: [
-                  new TextRun({
-                    text: "Company Logo:",
-                    bold: true,
-                    font: "Arial",
-                    size: 22,
-                  }),
-                  new TextRun({
-                    text: " ",
-                  }),
-                  new ExternalHyperlink({
-                    url: formData.companyLogoURL,
-                    children: [
-                      new ImageRun({
-                        type: 'gif', // Adjust type as per your image type
-                        data: await fetchImageAsUint8Array(formData.companyLogoURL),
-                        transformation: {
-                          width: 100,
-                          height: 100,
-                        },
-                      }),
-                    ],
-                  }),
-                ],
-                spacing: {
-                  after: 200, // Adding spacing after the paragraph
-                },
-              }),
             ],
           },
         ],
       });
-
-      // Pack the document into a blob
-      const blob = await Packer.toBlob(doc);
-
-      // Save the document using file-saver
-      saveAs(blob, `${formData.companyName}_press_release.docx`);
+  
+      // Pack the document into a blob and save
+      const docBlob = await Packer.toBlob(doc);
+      saveAs(docBlob, 'output.docx');
+      console.log('Document created successfully');
+      console.log('Document created successfully');
     } catch (error) {
       console.error('Error generating document: ', error);
     }
   };
 
-  const fetchImageAsUint8Array = async (imageUrl) => {
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // Example of a CORS proxy
-    const proxyImageUrl = proxyUrl + imageUrl;
-  
-    try {
-      const response = await fetch(proxyImageUrl);
-      if (!response.ok) {
-        throw new Error(`Error fetching image: ${response.statusText}`);
-      }
-      const blob = await response.blob();
-      return await new Response(blob).arrayBuffer();
-    } catch (error) {
-      console.error('Error fetching image: ', error);
-      throw error; // Rethrow the error for higher level handling
-    }
+  const handleImage = async (formData) => {
+    const imageElement = document.getElementById(formData.companyName);
+    console.log(imageElement);
   };
+  
+  // const fetchImageAsUint8Array = async (imageUrl, name) => {
+  //   console.log(imageUrl, name);
+  //   try {
+  //     // Create a reference to the file you want to download
+  //      const fileRef = ref(storage, `images/${companyName}`);
+
+  //     // Get the download URL
+  //     const url = await getDownloadURL(fileRef);
+  //     setFileUrl(url);
+  //   } catch (error) {
+  //     console.error("Error fetching file:", error);
+  //   }
+  // };
+  
   
   return (
     <div>
@@ -282,6 +305,7 @@ const Forms = () => {
                 <td key={colIndex}>{value}</td>
               ))}
               <td>
+                <img id={form.companyName} src={form.companyLogoURL ?form.companyLogoURL : '' } alt="" />
                 <button onClick={() => handleExport(form)}>Export</button>
               </td>
             </tr>
